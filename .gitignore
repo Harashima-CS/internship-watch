@@ -1,1 +1,3 @@
 .ntfy-topic
+__pycache__/
+*.pyc
