@@ -13,17 +13,31 @@ STATE = pathlib.Path(__file__).parent / "state.json"
 SEED = os.environ.get("SEED") == "1"
 NTFY = os.environ.get("NTFY_TOPIC", "")
 TERMS      = set(json.loads(os.environ.get("TERMS",      '["Summer 2027"]')))
-CATEGORIES = set(json.loads(os.environ.get("CATEGORIES", '["Software","AI/ML/Data"]')))
 LOCATIONS  =     json.loads(os.environ.get("LOCATIONS",  '[]'))
 MAX_AGE = 45 * 86400
 MIN_ROWS_FRAC = 0.5          # markdown source must keep >=50% of last row count
+
+# Role filter: SWE + design only. Applied to the main title (before any " - team"
+# suffix), so "Software Engineer Intern - ML Systems" passes but "ML Intern" doesn't.
+ROLE_ALLOW = re.compile(
+    r"\b(software|swe|sde|developer|development|designer|ux|ui|back[- ]?end|front[- ]?end|full[- ]?stack|"
+    r"(web|mobile|ios|android|app|application|cloud|platform|infrastructure|product) engineer\w*|"
+    r"forward[- ]deployed|devops|site reliability|computer science|"
+    r"product design|interaction design|visual design|graphic design|member of technical staff)\b", re.I)
+ROLE_BLOCK = re.compile(
+    r"\b(data|analy\w*|machine learning|ml|ai|artificial intelligence|research\w*|scien\w*(?<!computer science)|"
+    r"quant\w*|hardware|firmware|chip|asic|fpga|circuit|silicon|business intelligence|technology intern|"
+    r"it|information technology|sap|salesforce|product manag\w*|test|qa|validation|verification)\b", re.I)
+
+def role_ok(title):
+    main = re.split(r"\s+[-–—|]\s+", title)[0]
+    return bool(ROLE_ALLOW.search(main)) and not ROLE_BLOCK.search(main)
 
 JSON_SOURCES = {
     "simplify": "https://raw.githubusercontent.com/SimplifyJobs/Summer2027-Internships/dev/.github/scripts/listings.json",
     "vansh":    "https://raw.githubusercontent.com/vanshb03/Summer2027-Internships/dev/.github/scripts/listings.json",
 }
 MD_SOURCES = {
-    "zapply-ml": "https://raw.githubusercontent.com/zapplyjobs/awesome-ML-internships/main/README.md",
     "speedy":    "https://raw.githubusercontent.com/speedyapply/2027-SWE-College-Jobs/main/README.md",
 }
 
@@ -104,13 +118,7 @@ def matches(j, src):
         elif "season" in j:
             if not any(t.split()[0] in str(j.get("season") or "") for t in TERMS): return False
         # markdown sources: repo is already season-scoped, no term field to check
-    if CATEGORIES:
-        if j.get("category") is not None:
-            if j["category"] not in CATEGORIES: return False
-        elif src != "zapply-ml":   # that repo is 100% ML by construction
-            kw = ("software","engineer","developer","swe","backend","frontend","full stack",
-                  "machine learning","data","research","ai ","ml ","computer vision")
-            if not any(w in j["title"].lower() for w in kw): return False
+    if not role_ok(j["title"]): return False
     if LOCATIONS:
         locs = j.get("locations") or []
         blob = " ".join(locs).lower()
