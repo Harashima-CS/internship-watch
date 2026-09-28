@@ -20,7 +20,7 @@ MIN_ROWS_FRAC = 0.5          # markdown source must keep >=50% of last row count
 # Role filter: SWE + design only. Applied to the main title (before any " - team"
 # suffix), so "Software Engineer Intern - ML Systems" passes but "ML Intern" doesn't.
 ROLE_ALLOW = re.compile(
-    r"\b(software|swe|sde|developer|development|designer|ux|ui|back[- ]?end|front[- ]?end|full[- ]?stack|"
+    r"\b(software|swe|sde|developer|((software|web|app|application|applications|cloud|mobile|game) )+development|designer|ux|ui|back[- ]?end|front[- ]?end|full[- ]?stack|"
     r"(web|mobile|ios|android|app|application|cloud|platform|infrastructure|product) engineer\w*|"
     r"forward[- ]deployed|devops|site reliability|computer science|"
     r"product design|interaction design|visual design|graphic design|member of technical staff)\b", re.I)
